@@ -2,6 +2,19 @@
 
 Research code for understanding gaps in a monitoring network and modelling PM2.5 across stations. The workflow combines missingness summaries, inverse-distance-weighted spatial imputation, artificial outage evaluation, and regression models with pollutant and wind features.
 
+## Motivation and research questions
+
+Air-quality analysis depends on where and when measurements are available. A missing reading creates a practical question: can the remaining monitoring network provide useful information about the unobserved concentration, or is there too little evidence to fill the gap? Before drawing conclusions from a completed dataset, it matters which stations have gaps, how long those gaps last, and how well an imputation method performs when pollution is unusually high.
+
+The outcome of interest is **PM2.5**, the concentration of fine particulate matter with a diameter of approximately 2.5 micrometres or smaller. This project studies its measurement and conditional relationships with other available pollutant and weather readings. The research questions connect data quality to what can reasonably be learned from the network:
+
+- **Where are the measurement gaps?** Describe missing readings by station and the duration of consecutive hourly gaps, so isolated missing hours can be distinguished from prolonged outages.
+- **Can nearby stations help fill them?** Use observations recorded at the same time at other stations as a spatial baseline, then examine when that baseline can provide a prediction.
+- **How informative is that baseline during sustained outages?** Hide blocks of known readings and compare the predictions with the observed values, including errors among high-pollution readings.
+- **How does PM2.5 vary with the observed conditions?** Model its relationship with wind, other pollutants, and recent within-station readings, and assess whether the relationships support predictions in a later period.
+
+The aim is to support better-informed choices about data preparation and modelling. A completed panel is useful only if its filled values and remaining gaps are understood; the evaluation therefore reports both prediction error and the share of targets for which a prediction is available.
+
 ## Research context and contributions
 
 The project is led by **Dr Ghita Berrada, principal investigator**, and **Dr Huda Alrashidi, co-principal investigator**. Vignesh contributes data preparation, missingness analysis, and the implementation and organisation of analytical workflows. **Oskar contributed spatial modelling and artificial-outage experiments**, documented in the project's working material. The broader research and collaborators' findings remain collaborative work.
@@ -20,6 +33,20 @@ This repository packages the analytical methods in reusable Python modules. The 
 | Statistical modelling | OLS with HC3 covariance and conditional quantile regressions, fitted before an explicit time cutoff and assessed after it. |
 
 IDW is a spatial interpolation baseline. The regression models use contemporaneous pollutant and weather covariates; they assess conditional relationships and prediction given those inputs. They are not automatically future forecasts or evidence of a causal pollution source.
+
+## How the methods answer the questions
+
+**Start with a station-by-time panel.** Private monitoring records are converted to one row per station and timestamp, with pollutant concentrations and any available wind measurements in consistent fields. Missingness summaries describe the recorded panel. Where the question concerns scheduled monitoring coverage, the input must first include the documented hourly operating grid so that entirely absent rows also count as gaps.
+
+**Build a spatial benchmark.** Inverse-distance weighting, or IDW, estimates a missing reading using a weighted average of other stations' observed readings at that same time. Closer stations receive greater weight, with the distance power and neighbour limit controlling how local the estimate is. This gives a clear reference method against which more elaborate approaches could be compared. It also makes the coverage question explicit: if no suitable neighbour is observed, the estimate remains missing.
+
+**Evaluate against readings that are actually known.** Artificial outages temporarily hide consecutive hours with observed PM2.5 and retain those readings as comparison targets. The resulting errors show how the method behaves under that particular outage design. MAE summarizes the average absolute error; RMSE puts more weight on large misses; prediction coverage records how often the method can supply an estimate. Upper-tail errors focus attention on high observed concentrations that an overall average could obscure. These comparisons evaluate a method rather than establish that real outages occur randomly.
+
+**Model average and distributional relationships.** The regression workflow uses the natural logarithm of positive PM2.5 as its outcome. Wind direction becomes sine and cosine features so that directions near 0° and 360° remain adjacent. Recent PM2.5 readings are matched at exact one- and two-hour intervals within each station. Other pollutant levels and selected interactions can enter as explanatory features.
+
+Ordinary least squares describes the conditional mean of log PM2.5. Quantile regression examines selected parts of its conditional distribution: for example, a model for the 90th percentile asks how relatively high concentrations vary with the included inputs. These are different statistical targets, so a quantile prediction should be interpreted at its chosen percentile rather than as another estimate of the mean. A chronological fitting cutoff separates earlier training observations from later evaluation targets.
+
+The outputs connect these steps: station-level gap summaries identify the data-quality problem; masked-outage predictions and coverage describe the spatial baseline; and coefficient tables, held-out predictions, and error summaries describe the regression specifications. They support comparisons of modelling choices and conditional patterns. Identifying the causal effect of an emissions source or intervention would require an additional research design.
 
 ## Install
 
