@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kuwait-air-quality"
+version = "0.1.0"
+description = "Missingness, spatial imputation and statistical models for a PM2.5 monitoring panel"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "pandas>=2.0", "scipy>=1.10", "statsmodels>=0.14"]
+
+[project.scripts]
+kuwait-air-quality = "kuwait_air_quality.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
